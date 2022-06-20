@@ -2,10 +2,6 @@
 
 ## 简单介绍
 
-[AlloyTeam](http://www.alloyteam.com)
-
-项目文档地址：http://www.alloyteam.com/2016/11/with-webgl-to-build-a-simple-first-person-shooter-games/
-
 # **1、游戏准备：**
 
 做一款游戏和做一个项目是一样的，不能刚有想法了就直接开始撸代码。一个前端项目可能要考虑框架选型、选用何种构建、设计模式等等；而一款游戏，在确定游戏类型之后，要考虑游戏玩法，游戏场景，游戏关卡，游戏建模美术等等，而这些很多都是非代码技术层面的，在真正的游戏开发中会有专门那个领域的人去负责，所以一款好的游戏，每一个环节都不可或缺。
@@ -115,49 +111,47 @@ lookAt 功能如其名，用来确认 3D 世界中的摄像机方向（操作视
 
 ```js
 var camera = {
-    rx: 0,
-    ry: 0,
-    mx: 0,
-    my: 0,
-    mz: 0,
-    toMatrix: function() {
-        var rx = this.rx;
-        var ry = this.ry;
-        var mx = this.mx;
-        var my = this.my;
-        var mz = this.mz;
- 
-        var F = normalize3D([Math.sin(rx)*Math.cos(ry), Math.sin(ry), -Math.cos(rx) * Math.cos(ry)]);
- 
-        var x = F[0];
-        var z = F[2];
- 
-        var angle = getAngle([0, -1], [x, z]);
- 
- 
-        var R = [Math.cos(angle), 0, Math.sin(angle)];
- 
-        var U = cross3D(R, F);
- 
-        F[0] = -F[0];
-        F[1] = -F[1];
-        F[2] = -F[2];
- 
-        var s = [];
- 
-        s.push(R[0], U[0], F[0], 0);
-        s.push(R[1], U[1], F[1], 0);
-        s.push(R[2], U[2], F[2], 0);
- 
-        s.push(
-            0,
-            0,
-            0,
-            1
-        );
- 
-        return s;
-    }
+  rx: 0,
+  ry: 0,
+  mx: 0,
+  my: 0,
+  mz: 0,
+  toMatrix: function () {
+    var rx = this.rx;
+    var ry = this.ry;
+    var mx = this.mx;
+    var my = this.my;
+    var mz = this.mz;
+
+    var F = normalize3D([
+      Math.sin(rx) * Math.cos(ry),
+      Math.sin(ry),
+      -Math.cos(rx) * Math.cos(ry),
+    ]);
+
+    var x = F[0];
+    var z = F[2];
+
+    var angle = getAngle([0, -1], [x, z]);
+
+    var R = [Math.cos(angle), 0, Math.sin(angle)];
+
+    var U = cross3D(R, F);
+
+    F[0] = -F[0];
+    F[1] = -F[1];
+    F[2] = -F[2];
+
+    var s = [];
+
+    s.push(R[0], U[0], F[0], 0);
+    s.push(R[1], U[1], F[1], 0);
+    s.push(R[2], U[2], F[2], 0);
+
+    s.push(0, 0, 0, 1);
+
+    return s;
+  },
 };
 ```
 
@@ -165,36 +159,39 @@ var camera = {
 
 ```js
 var mouse = {
-    x: oC.width / 2,
-    y: oC.height / 2
+  x: oC.width / 2,
+  y: oC.height / 2,
 };
- 
-oC.addEventListener('mousedown', function(e) {
-    if(!level.isStart) {
-        level.isStart = true;
-        level.start();
+
+oC.addEventListener(
+  "mousedown",
+  function (e) {
+    if (!level.isStart) {
+      level.isStart = true;
+      level.start();
     }
     oC.requestPointerLock();
-}, false);
- 
-oC.addEventListener("mousemove", function(event) {
- 
-    if(document.pointerLockElement) {
- 
-        camera.rx += (event.movementX / 200);
-        camera.ry += (-event.movementY / 200);
+  },
+  false
+);
+
+oC.addEventListener(
+  "mousemove",
+  function (event) {
+    if (document.pointerLockElement) {
+      camera.rx += event.movementX / 200;
+      camera.ry += -event.movementY / 200;
     }
- 
-    if(camera.ry >= Math.PI/2) {
-        camera.ry = Math.PI/2;
-    } else if(camera.ry <= -Math.PI/2) {
-        camera.ry = -Math.PI/2;
+
+    if (camera.ry >= Math.PI / 2) {
+      camera.ry = Math.PI / 2;
+    } else if (camera.ry <= -Math.PI / 2) {
+      camera.ry = -Math.PI / 2;
     }
-    
-}, false);
+  },
+  false
+);
 ```
-
-
 
 lockMouse+momentX/Y 对于游戏开发来说是真的好用啊！！否则自己来写超级蛋疼还可能会有点问题，安利一大家一波，用法也很简单。
 
@@ -215,44 +212,39 @@ lockMouse+momentX/Y 对于游戏开发来说是真的好用啊！！否则自己
 ```js
 var x = F[0];
 var z = F[2];
- 
+
 var angle = getAngle([0, -1], [x, z]);
 ```
-
-
 
 angle 得出了最终的视角方向（-Z）和最初视线方向在 x-z 坐标系中的偏转角，因为是 x-z 坐标系，所以最初的 X 正方向和最终的 X 正方向偏移角也是 angle
 
 ```js
-
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
+4;
+5;
+6;
+7;
+8;
+9;
+10;
+11;
+12;
+13;
+14;
 function getAngle(A, B) {
-    if(B[0] === 0 && A[0] === 0) {
-        return 0;
-    }
- 
-    var diffX = B[0] - A[0];
-    var diffY = B[1] - A[1];
- 
-    var a = A[0] * B[0] + A[1] * B[1];
-    var b = Math.sqrt(A[0] * A[0] + A[1] * A[1]);
-    var c = Math.sqrt(B[0] * B[0] + B[1] * B[1]);
- 
-    return (B[0] / Math.abs(B[0])) *  Math.acos(a / b / c);
+  if (B[0] === 0 && A[0] === 0) {
+    return 0;
+  }
+
+  var diffX = B[0] - A[0];
+  var diffY = B[1] - A[1];
+
+  var a = A[0] * B[0] + A[1] * B[1];
+  var b = Math.sqrt(A[0] * A[0] + A[1] * A[1]);
+  var c = Math.sqrt(B[0] * B[0] + B[1] * B[1]);
+
+  return (B[0] / Math.abs(B[0])) * Math.acos(a / b / c);
 }
 ```
-
-
 
 通过简单的三角函数得到了最终 X 轴的正方向 R（注意：没考虑围绕 Z 轴的旋转，否则要繁琐一些）
 
@@ -284,8 +276,6 @@ R、U、-F 都得到了，也就得到了最终的 VM 视图矩阵！
 
 [![11](http://www.alloyteam.com/wp-content/uploads/2016/11/11-300x190.png)](http://www.alloyteam.com/wp-content/uploads/2016/11/11.png)正常游戏画面
 
-
-
 发现整个世界中只有靶子有颜色对不对！这样我们读取帧缓冲图像中某个点的 rgba 值，就知道对应的点是不是在靶子上了！实现了坐标碰撞检测！
 
 之前说的更加灵活的处理，就是指渲染时对各个模型颜色的处理
@@ -298,27 +288,27 @@ oC.onclick = function(e) {
         return ;
     }
     gun.fire();
- 
+
     var x = width / 2;
     var y = height / 2;
-    
+
     webgl.uniform1i(uIsFrame, true);
     webgl.bindFramebuffer(webgl.FRAMEBUFFER, framebuffer);
     webgl.clear(webgl.COLOR_BUFFER_BIT | webgl.DEPTH_BUFFER_BIT);
- 
+
     targets.drawFrame();
- 
+
     var readout = new Uint8Array(1*1*4);
- 
+
     // webgl.bindFramebuffer(webgl.FRAMEBUFFER, framebuffer);
     webgl.readPixels(x, y, 1, 1, webgl.RGBA, webgl.UNSIGNED_BYTE, readout);
     webgl.bindFramebuffer(webgl.FRAMEBUFFER, null);
- 
+
     targets.check(readout);
- 
+
     webgl.uniform1i(uIsFrame, false);
 };
- 
+
 /* targets下的check方法 */
 check: function(arr) {
     var r = '' + Math.floor(arr[0] / 255 * 100);
@@ -326,7 +316,7 @@ check: function(arr) {
     var b = '' + Math.floor(arr[2] / 255 * 100);
     var i;
     var id;
- 
+
     for(i = 0; i < this.ids.length; i++) {
         if(Math.abs(this.ids[i][0] - r) <= 1 && Math.abs(this.ids[i][1] - g) <= 1 && Math.abs(this.ids[i][2] - b) <= 1) {
             console.log('命中!');
@@ -339,8 +329,6 @@ check: function(arr) {
     }
 }
 ```
-
-
 
 而且这个方法很快，计算量都在 GPU 里面，这种数学计算的效率 GPU 是比 CPU 快的，GPU 还是并行的！那传统的 AABB 法还有存在的意义么？
 
