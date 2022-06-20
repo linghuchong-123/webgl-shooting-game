@@ -4,7 +4,7 @@
  * @Author: yangsen
  * @Date: 2022-03-02 20:16:14
  * @LastEditors: yangsen
- * @LastEditTime: 2022-06-20 19:41:50
+ * @LastEditTime: 2022-06-20 21:19:11
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -306,41 +306,57 @@
       webgl.activeTexture(webgl.TEXTURE0);
       // 绑定纹理缓冲区
       webgl.bindTexture(webgl.TEXTURE_2D, texture);
+      // texImage2D() 方法指定了二维纹理图像。
       webgl.texImage2D(
-        webgl.TEXTURE_2D,
-        0,
-        webgl.RGB,
+        webgl.TEXTURE_2D, // 二维纹理贴图。
+        0, // 指定详细级别. 0 级是基本图像等级，n 级是第 n 个金字塔简化级。
+        webgl.RGB, // 指定纹理中的颜色组件。还可能是rgba四通道，png是RGB，jpg是RGBA
         width,
         height,
-        0,
+        0, // 指定纹理的边框宽度。必须为 0。
         webgl.RGB,
-        webgl.UNSIGNED_BYTE,
-        null
+        webgl.UNSIGNED_BYTE, // 指定 texel 数据格式,与第二个参数一致
+        null // 这里没有指定图片
       );
 
+      /*  
+      创建并初始化一个 WebGLRenderbuffer 对象。
+      返回值：一个 WebGLRenderbuffer 对象可以保存数据，例如一张图片，或者可以渲染操作的源或目标。 
+      */
       var renderbuffer = webgl.createRenderbuffer();
+      /*  将给定的 WebGLRenderbuffer 绑定到一个目标，它必须是 gl.RENDERBUFFER 。
+      gl.RENDERBUFFER:以可渲染的内部格式对单个图像进行缓冲数据存储。 */
       webgl.bindRenderbuffer(webgl.RENDERBUFFER, renderbuffer);
+      /* 用来创建和初始化一个渲染缓冲区对象的数据存储。 */
       webgl.renderbufferStorage(
-        webgl.RENDERBUFFER,
-        webgl.DEPTH_COMPONENT16,
-        width,
+        webgl.RENDERBUFFER, // 指定一个渲染缓冲区对象,gl.RENDERBUFFER:以可渲染的内部格式对单个图像进行缓冲数据存储
+        webgl.DEPTH_COMPONENT16, // 指定渲染缓冲区的内部格式,gl.DEPTH_COMPONENT16: 16 depth bits.
+        width, // 指定渲染缓冲区的宽度 (以像素为单位).
+
         height
       );
 
+      /* 用来创建和初始化WebGLFramebuffer 对象。
+      返回值:WebGLFramebuffer 对象 */
       var framebuffer = webgl.createFramebuffer();
+      /* 将给定的 WebGLFramebuffer 绑定到目标
+        FRAMEBUFFER: 收集用于渲染图像的颜色，alpha，深度和模板缓冲区的缓冲区数据存储。
+       */
       webgl.bindFramebuffer(webgl.FRAMEBUFFER, framebuffer);
+      /* 将纹理附加到 WebGLFramebuffer */
       webgl.framebufferTexture2D(
         webgl.FRAMEBUFFER,
-        webgl.COLOR_ATTACHMENT0,
-        webgl.TEXTURE_2D,
-        texture,
-        0
+        webgl.COLOR_ATTACHMENT0, // 指定的连接点texture,gl.COLOR_ATTACHMENT0：将纹理附加到帧缓冲区的颜色缓冲区
+        webgl.TEXTURE_2D, // 二维图像
+        texture, // 要附加其图像的对象。
+        0 // 指定要附加的纹理图像的 mipmap 级别。必须为 0。
       );
+      /* 将对象附加 到对象。 WebGLRenderbufferWebGLFramebuffer */
       webgl.framebufferRenderbuffer(
-        webgl.FRAMEBUFFER,
-        webgl.DEPTH_ATTACHMENT,
-        webgl.RENDERBUFFER,
-        renderbuffer
+        webgl.FRAMEBUFFER, // 指定帧缓冲区的绑定点（目标）,gl.FRAMEBUFFER用于渲染图像的颜色、alpha、深度和模板缓冲区的集合缓冲区数据存储。
+        webgl.DEPTH_ATTACHMENT, // 指定渲染缓冲区的连接点, gl.DEPTH_ATTACHMENT: 深度缓冲区。
+        webgl.RENDERBUFFER, // 指定渲染缓冲区的绑定点（目标）,gl.RENDERBUFFER以可渲染的内部格式存储单个图像的缓冲区数据。
+        renderbuffer // 要附加的对象。
       );
 
       webgl.bindTexture(webgl.TEXTURE_2D, null);
@@ -355,15 +371,21 @@
 
       level.init();
 
+      /* 指定清除颜色缓冲区时使用的颜色值。(1,1,1)是白色 */
       webgl.clearColor(1, 1, 1, 1.0);
+      /* 指定深度缓冲区的清除值 ，默认值1.0*/
       webgl.clearDepth(1.0);
 
+      /* 为此上下文启用了特定的 WebGL 功能。gl.DEPTH_TEST：激活深度比较并更新深度缓冲区 */
       webgl.enable(webgl.DEPTH_TEST);
+      /* 指定了一个比较传入像素深度与当前深度缓冲区值的函数。 */
       webgl.depthFunc(webgl.LESS);
 
+      /* BLEND：激活计算的片段颜色值的混合 */
       webgl.enable(webgl.BLEND);
 
       var timer = setInterval(function () {
+        /* 将缓冲区清除为预设值。 */
         webgl.clear(webgl.COLOR_BUFFER_BIT | webgl.DEPTH_BUFFER_BIT);
 
         gun.draw();
@@ -379,12 +401,14 @@
         return A[0] * B[0] + A[1] * B[1] + A[2] * B[2];
       }
 
+      /* 归一化 */
       function normalize3D(A) {
         var n = Math.sqrt(A[0] * A[0] + A[1] * A[1] + A[2] * A[2]);
         if (!n) return [0, 0, 0];
         return [A[0] / n, A[1] / n, A[2] / n];
       }
 
+      /* 叉乘 */
       function cross3D(A, B) {
         return [
           A[1] * B[2] - A[2] * B[1],
