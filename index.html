@@ -1,0 +1,412 @@
+<!--
+ * @Description: 第一人称射击游戏主文件
+ * @Version: 2.0
+ * @Author: yangsen
+ * @Date: 2022-03-02 20:16:14
+ * @LastEditors: yangsen
+ * @LastEditTime: 2022-06-20 19:41:50
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>index</title>
+    <style>
+      @keyframes opacity {
+        from {
+          opacity: 0;
+        }
+
+        23% {
+          opacity: 1;
+        }
+
+        46% {
+          opacity: 0;
+        }
+
+        69% {
+          opacity: 1;
+        }
+
+        92% {
+          opacity: 0;
+        }
+
+        to {
+          opacity: 0;
+        }
+      }
+
+      html,
+      body {
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+        font-family: "Segoe UI Light", "Segoe UI", "Microsoft Jhenghei",
+          "微软雅黑", sans-serif;
+      }
+
+      html {
+        height: 100%;
+      }
+
+      body {
+        width: 100%;
+        height: 100%;
+      }
+
+      canvas {
+        display: block;
+        margin: 0 auto;
+        width: 100%;
+        height: 100%;
+      }
+
+      html {
+        background-color: black;
+      }
+
+      .aim {
+        position: absolute;
+        width: 56px;
+        height: 56px;
+        left: 50%;
+        top: 50%;
+        background-image: url(./aim.png);
+        pointer-events: none;
+        transform-origin: center center;
+        transform: translate(-50%, -50%) scale(0.5, 0.5);
+      }
+
+      .score {
+        width: 180px;
+        height: 30px;
+        line-height: 30px;
+        font-size: 30px;
+        position: absolute;
+        color: #6a0000;
+        top: 5px;
+        left: 15px;
+        font-weight: bold;
+        text-shadow: 1px 1px white;
+      }
+
+      .score span {
+        font-style: italic;
+      }
+
+      .time {
+        width: 180px;
+        height: 30px;
+        line-height: 30px;
+        font-size: 30px;
+        position: absolute;
+        color: #6a0000;
+        top: 45px;
+        left: 15px;
+        font-weight: bold;
+        text-shadow: 1px 1px white;
+      }
+
+      .time span {
+        /* 控制字体是否斜体 */
+        font-style: italic;
+      }
+
+      .prompt {
+        width: 300px;
+        height: 60px;
+        line-height: 30px;
+        font-size: 30px;
+        color: #5eefff;
+        text-shadow: 1px 1px black;
+        background-image: url(./arrow.png);
+        background-position: 93px 13px;
+        background-repeat: no-repeat;
+        position: absolute;
+        left: 50%;
+        top: 40%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        pointer-events: none;
+        opacity: 0;
+      }
+
+      .animate {
+        animation-name: opacity;
+        animation-duration: 3s;
+      }
+    </style>
+    <!-- script内写webgl代码不能有注释 -->
+    <script id="shader-vs" type="x-shader/x-vertex">
+      attribute vec3 aPosition;
+      attribute vec3 aColor;
+      attribute vec4 aFrameColor;
+
+      uniform mat4 uPMatrix;
+      uniform mat4 uMMatrix;
+      uniform mat4 uVMatrix;
+
+      uniform bool uIsFrame;
+
+      varying vec4 vColor;
+      varying vec4 vPosition;
+      void main() {
+          gl_Position = uPMatrix * uVMatrix * uMMatrix * vec4(aPosition, 1.0);
+          gl_PointSize = 3.0;
+          if(uIsFrame) {
+              vColor = aFrameColor;
+          } else {
+              vColor = vec4(aColor, 1.0);
+          }
+      }
+    </script>
+    <script id="shader-fs" type="x-shader/x-fragment">
+
+      precision highp float;
+
+      varying vec4 vColor;
+      varying vec4 vPosition;
+
+      void main() {
+
+          gl_FragColor = vColor;
+      }
+    </script>
+  </head>
+
+  <body>
+    <canvas id="c" width="1200" height="800"></canvas>
+    <div class="aim"></div>
+    <div class="score">分数： <span id="bgScore">0</span></div>
+    <div class="time">时间： <span id="bgTime">60</span></div>
+    <div id="prompt" class="prompt">第一关</div>
+    <audio id="bgSound1"></audio>
+    <audio id="bgSound2"></audio>
+    <script>
+      var oC = document.getElementById("c");
+      var webgl = oC.getContext("webgl");
+
+      var width = oC.width;
+      var height = oC.height;
+    </script>
+    <script src="./js/gun.js"></script>
+    <script src="./js/scene.js"></script>
+    <script src="./js/camera.js"></script>
+    <script src="./js/target.js"></script>
+    <script src="./js/level.js"></script>
+    <script src="./js/bullet.js"></script>
+    <!-- <script src="./test.js"></script> -->
+    <script src="./js/time.js"></script>
+    <script src="./js/audio.js"></script>
+    <script src="./js/score.js"></script>
+    <script>
+      var vsScript = document.getElementById("shader-vs").innerText;
+      var fsScript = document.getElementById("shader-fs").innerText;
+
+      // 创建顶点着色器对象
+      var vs = webgl.createShader(webgl.VERTEX_SHADER);
+      // 创建片元着色器对象
+      var fs = webgl.createShader(webgl.FRAGMENT_SHADER);
+
+      // 引入顶点着色器，片元着色器源码
+      webgl.shaderSource(vs, vsScript);
+      webgl.shaderSource(fs, fsScript);
+
+      // 编译顶点，片元着色器
+      webgl.compileShader(vs);
+      webgl.compileShader(fs);
+
+      // webgl.getShaderParameter，返回给定的着色器信息；webgl.COMPILE_STATUS着色器是否编译成功
+      if (!webgl.getShaderParameter(vs, webgl.COMPILE_STATUS)) {
+        alert("vs error");
+      }
+      if (!webgl.getShaderParameter(fs, webgl.COMPILE_STATUS)) {
+        alert("fs error");
+      }
+
+      // 创建程序对象program
+      var program = webgl.createProgram();
+
+      // 附着顶点着色器和片元着色器到program
+      webgl.attachShader(program, vs);
+      webgl.attachShader(program, fs);
+
+      // 链接program
+      webgl.linkProgram(program);
+      // 使用program
+      webgl.useProgram(program);
+
+      var aPosition, aColor;
+
+      // 获取顶点着色器的位置变量aPosition，返回值：一个GLint数字，指示变量名称的位置（如果找到）。否则返回 -1。
+      aPosition = webgl.getAttribLocation(program, "aPosition");
+      aColor = webgl.getAttribLocation(program, "aColor");
+      aFrameColor = webgl.getAttribLocation(program, "aFrameColor");
+
+      // enableVertexAttribArray() 方法，可以打开属性数组列表中指定索引处的通用顶点属性数组。默认情况下所有的attribute属性是关闭的，需要打开,才可在顶点着色器中访问逐顶点的属性数据,才可以看到，一些方法才可以使用，包括vertexAttribPointer()，vertexAttrib*()，和 getVertexAttrib() 。getAttribLocation()是配合enableVertexAttribArray()使用的，getAttribLocation()的返回值是enableVertexAttribArray()的参数
+      webgl.enableVertexAttribArray(aPosition);
+      webgl.enableVertexAttribArray(aColor);
+      webgl.disableVertexAttribArray(aFrameColor);
+
+      var uPMatrix, uMMatrix, uVMatrix;
+
+      var uMMatrix_1, uMMatrix_2;
+
+      uPMatrix = webgl.getUniformLocation(program, "uPMatrix"); // 投影矩阵
+      uMMatrix = webgl.getUniformLocation(program, "uMMatrix"); // 模型矩阵
+      uVMatrix = webgl.getUniformLocation(program, "uVMatrix"); // 视图矩阵
+      uIsFrame = webgl.getUniformLocation(program, "uIsFrame");
+
+      var i, j, a;
+
+      // 把立即执行函数当做变量赋值用
+      var projection = (function (a, r, n, f) {
+        // Math.tan()返回一个数值的正切值，参数是弧度制数
+        a = 1 / Math.tan((a * Math.PI) / 360);
+
+        return [
+          a / r,
+          0,
+          0,
+          0,
+
+          0,
+          a,
+          0,
+          0,
+
+          0,
+          0,
+          -(f + n) / (f - n),
+          -1,
+
+          0,
+          0,
+          (-2 * f * n) / (f - n),
+          0,
+        ];
+      })(90, width / height, 0.1, 1000); // canvas元素的width，height;四个参数：垂视角，近截面的宽高比，近截面位置，远截面位置
+
+      /*  向顶点着色器uniform变量uPMatrix传值，uPMatrix是一个4维矩阵；第2个参数，是否转置矩阵，必须为false；
+            uPMatrix 是投影变换矩阵，就理解为 3 维物体能在 2D 屏幕上显示最为重要的一步 */
+      webgl.uniformMatrix4fv(uPMatrix, false, projection);
+
+      // uVMatrix 是视图变换矩阵，我们用它来改变摄像头的位置，lookAt方向
+      webgl.uniformMatrix4fv(
+        uVMatrix,
+        false,
+        [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+      );
+
+      // 创建纹理图像缓冲区
+      var texture = webgl.createTexture();
+      // 激活0号纹理单元TEXTURE0
+      webgl.activeTexture(webgl.TEXTURE0);
+      // 绑定纹理缓冲区
+      webgl.bindTexture(webgl.TEXTURE_2D, texture);
+      webgl.texImage2D(
+        webgl.TEXTURE_2D,
+        0,
+        webgl.RGB,
+        width,
+        height,
+        0,
+        webgl.RGB,
+        webgl.UNSIGNED_BYTE,
+        null
+      );
+
+      var renderbuffer = webgl.createRenderbuffer();
+      webgl.bindRenderbuffer(webgl.RENDERBUFFER, renderbuffer);
+      webgl.renderbufferStorage(
+        webgl.RENDERBUFFER,
+        webgl.DEPTH_COMPONENT16,
+        width,
+        height
+      );
+
+      var framebuffer = webgl.createFramebuffer();
+      webgl.bindFramebuffer(webgl.FRAMEBUFFER, framebuffer);
+      webgl.framebufferTexture2D(
+        webgl.FRAMEBUFFER,
+        webgl.COLOR_ATTACHMENT0,
+        webgl.TEXTURE_2D,
+        texture,
+        0
+      );
+      webgl.framebufferRenderbuffer(
+        webgl.FRAMEBUFFER,
+        webgl.DEPTH_ATTACHMENT,
+        webgl.RENDERBUFFER,
+        renderbuffer
+      );
+
+      webgl.bindTexture(webgl.TEXTURE_2D, null);
+      webgl.bindRenderbuffer(webgl.RENDERBUFFER, null);
+      webgl.bindFramebuffer(webgl.FRAMEBUFFER, null);
+
+      var gun = Gun(webgl);
+      var scenes = Scenes(webgl);
+      var targets = Target(webgl);
+      var bullet = Bullet(webgl);
+      var boom = false;
+
+      level.init();
+
+      webgl.clearColor(1, 1, 1, 1.0);
+      webgl.clearDepth(1.0);
+
+      webgl.enable(webgl.DEPTH_TEST);
+      webgl.depthFunc(webgl.LESS);
+
+      webgl.enable(webgl.BLEND);
+
+      var timer = setInterval(function () {
+        webgl.clear(webgl.COLOR_BUFFER_BIT | webgl.DEPTH_BUFFER_BIT);
+
+        gun.draw();
+        scenes.draw();
+        targets.draw();
+
+        if (boom) {
+          bullet.draw();
+        }
+      }, 16);
+
+      function dot3D(A, B) {
+        return A[0] * B[0] + A[1] * B[1] + A[2] * B[2];
+      }
+
+      function normalize3D(A) {
+        var n = Math.sqrt(A[0] * A[0] + A[1] * A[1] + A[2] * A[2]);
+        if (!n) return [0, 0, 0];
+        return [A[0] / n, A[1] / n, A[2] / n];
+      }
+
+      function cross3D(A, B) {
+        return [
+          A[1] * B[2] - A[2] * B[1],
+          A[2] * B[0] - A[0] * B[2],
+          A[0] * B[1] - A[1] * B[0],
+        ];
+      }
+
+      function getAngle(A, B) {
+        if (B[0] === 0 && A[0] === 0) {
+          return 0;
+        }
+
+        var diffX = B[0] - A[0];
+        var diffY = B[1] - A[1];
+
+        var a = A[0] * B[0] + A[1] * B[1];
+        var b = Math.sqrt(A[0] * A[0] + A[1] * A[1]);
+        var c = Math.sqrt(B[0] * B[0] + B[1] * B[1]);
+
+        return (B[0] / Math.abs(B[0])) * Math.acos(a / b / c);
+      }
+    </script>
+  </body>
+</html>
